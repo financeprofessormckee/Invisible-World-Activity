@@ -242,6 +242,8 @@
   function lineCheck(line) {
     if (!line || [line.q1, line.p1, line.q2, line.p2].some(function (x) { return typeof x !== 'number' || !isFinite(x); }))
       return 'incomplete';
+    if ([line.q1, line.p1, line.q2, line.p2].some(function (x) { return x < 0 || x > GRID; }))
+      return 'bounds';
     if (Math.abs(line.q2 - line.q1) < 1e-9) return 'vertical';
     return null;
   }
@@ -266,11 +268,17 @@
   function gradeCurve(world, line, kind, settings, observations) {
     var problem = lineCheck(line);
     if (problem) return { valid: false, error: problem };
+    // Repeated equilibria are one piece of evidence, even if they cost another observation.
+    if (observations.length < 2 || !observations.some(function (o) {
+      return Math.abs(o.Q - observations[0].Q) > 1e-9;
+    })) return { valid: false, error: 'evidence' };
     var curve = trueCurve(world, kind, settings);
     var win = gradeWindow(observations);
     var dev = Math.max(Math.abs(linePriceAt(line, win[0]) - curve.priceAt(win[0])),
                        Math.abs(linePriceAt(line, win[1]) - curve.priceAt(win[1])));
-    return { valid: true, correct: dev <= CONFIG.tolerance, deviation: dev, window: win };
+    var slope = (line.p2 - line.p1) / (line.q2 - line.q1);
+    var direction = kind === 'supply' ? slope > 0 : slope < 0;
+    return { valid: true, correct: direction && dev <= CONFIG.tolerance, deviation: dev, window: win };
   }
 
   /* ---------- Scoring ---------- */

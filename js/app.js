@@ -38,6 +38,8 @@
       phase: 'play',
       replayIndex: 0
     };
+    drag = null; press = null;
+    ['attach', 'thru-1', 'thru-2'].forEach(function (id) { $(id).value = ''; });
     addObservation();
     try { window.history.replaceState(null, '', worldUrl(world)); } catch (e) { /* file:// may refuse; the link still works */ }
     buildConditionControls();
@@ -48,6 +50,8 @@
     document.querySelectorAll('.q-label').forEach(function (n) { n.textContent = 'Quantity'; });
     document.querySelectorAll('.p-label').forEach(function (n) { n.textContent = 'Price'; });
     configureEndpointInputs();
+    $('endpoint-units').textContent = 'Quantity: ' + unitWord(world.commodity.quantity) +
+      '. Price: ' + unitWord(world.commodity.price) + '. Enter values within the graph’s axes.';
     $('results').hidden = true;
     $('curve-feedback').textContent = '';
     setKind(firstOpenKind());
@@ -131,6 +135,7 @@
         input.max = IW.toDisplay(pair[1], IW.GRID);
         input.step = step;
         input.setAttribute('aria-description', pair[0] === 'q' ? c.quantity.title : c.price.title);
+        input.setAttribute('aria-describedby', 'endpoint-units curve-feedback');
       });
     });
   }
@@ -175,9 +180,13 @@
     var target = state.observations[Number($('attach').value)];
     var result = IW.gradeCurve(state.world, state.draft, kind, target.settings, state.observations);
     if (!result.valid) {
-      fb.textContent = result.error === 'vertical'
-        ? 'The two endpoints need different quantities; a vertical line cannot be checked.'
-        : 'Give the line first: pick two observations, type both endpoints, or click two spots on the graph.';
+      var errors = {
+        vertical: 'The two endpoints need different quantities; a vertical line cannot be checked.',
+        bounds: 'Keep each endpoint within the graph’s quantity and price ranges. No points deducted.',
+        evidence: 'Observe at least two different quantities before checking. Repeated points do not identify a curve. No points deducted.',
+        incomplete: 'Give the line first: pick two observations, type both endpoints, or click two spots on the graph.'
+      };
+      fb.textContent = errors[result.error];
       announce(fb.textContent);
       return;
     }
@@ -237,7 +246,7 @@
 
   var drag = null, press = null;
   function onPointerDown(evt) {
-    if (state.phase !== 'play') return;
+    if (state.phase !== 'play' || evt.button !== 0 || evt.isPrimary === false) return;
     var end = evt.target.getAttribute && evt.target.getAttribute('data-end');
     press = { x: evt.clientX, y: evt.clientY, moved: false };
     if (end) {
@@ -279,8 +288,8 @@
     var axis = axisKey === 'q' ? state.world.commodity.quantity : state.world.commodity.price;
     var raw = evt.target.value;
     var v = raw === '' ? NaN : IW.fromDisplay(axis, Number(raw));
-    if (isFinite(v)) v = Math.min(IW.GRID, Math.max(0, v));
     state.draft[axisKey + end] = v;
+    evt.target.setAttribute('aria-invalid', String(raw !== '' && (!isFinite(v) || v < 0 || v > IW.GRID)));
     renderGraph();
   }
 
@@ -379,6 +388,8 @@
       var qi = $('q' + end), pi = $('p' + end);
       if (document.activeElement !== qi) qi.value = isFinite(q) ? IW.toDisplay(c.quantity, q) : '';
       if (document.activeElement !== pi) pi.value = isFinite(p) ? IW.toDisplay(c.price, p) : '';
+      qi.setAttribute('aria-invalid', String(isFinite(q) && (q < 0 || q > IW.GRID)));
+      pi.setAttribute('aria-invalid', String(isFinite(p) && (p < 0 || p > IW.GRID)));
     });
     var parts = [];
     ['supply', 'demand'].forEach(function (k) {
@@ -389,6 +400,7 @@
 
   function renderLog() {
     var body = document.querySelector('#log tbody');
+    var focusId = body.contains(document.activeElement) ? document.activeElement.id : null;
     body.textContent = '';
     var c = state.world.commodity;
     state.observations.forEach(function (o, i) {
@@ -403,6 +415,7 @@
       var cell = document.createElement('td');
       var b = document.createElement('button');
       b.type = 'button';
+      b.id = 'log-action-' + i;
       b.className = 'btn btn--small';
       if (state.phase === 'done') {
         b.textContent = 'Replay ' + o.label;
@@ -419,6 +432,7 @@
       tr.appendChild(cell);
       body.appendChild(tr);
     });
+    if (focusId && $(focusId)) $(focusId).focus({ preventScroll: true });
   }
 
   function td(tr, text, cls) {
@@ -498,7 +512,7 @@
     $('breakdown').textContent = 'Started at ' + CFG.startScore +
       ', −' + sc.observationPenalty + ' for ' + extra + ' extra observation' + (extra === 1 ? '' : 's') +
       ', −' + sc.wrongPenalty + ' for ' + state.wrong + ' wrong tr' + (state.wrong === 1 ? 'y' : 'ies') +
-      ' = ' + sc.running + '. ' + found;
+      '; running score ' + sc.running + ' (minimum 0). ' + found;
     $('role-reveal').textContent = IW.ambiguousExplanation(state.world);
     var i = state.replayIndex, obs = state.observations, o = obs[i];
     $('replay-heading').textContent = 'Replay: observation ' + o.label + ' (' + (i + 1) + ' of ' + obs.length + ')';

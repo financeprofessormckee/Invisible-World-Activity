@@ -40,3 +40,18 @@ of derivative works. If you use or adapt this activity, please cite this reposit
 ---
 *Economic concepts: [David Friedman](http://daviddfriedman.com/Living_Paper/living_paper.htm). Development: [Eric McKee](https://github.com/financeprofessormckee),
 Paul and Virginia Engler College of Business, West Texas A&M University.*
+
+### Review and regression checks
+
+[REVIEW.md](REVIEW.md) records the findings behind this proposal. The model suite
+includes the duplicate-equilibrium grading regression. An optional integration
+suite exercises the actual page in Chromium:
+
+```sh
+npm install --no-save playwright@1.62.1
+npx playwright install chromium
+node tests/browser-tests.cjs
+```
+
+Set `CHROMIUM_EXECUTABLE_PATH` if using an existing Chromium installation.
+The application itself still requires no dependencies or build step.

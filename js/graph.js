@@ -96,7 +96,8 @@
     if (d) {
       [1, 2].forEach(function (end) {
         var q = d['q' + end], p = d['p' + end];
-        if (typeof q !== 'number' || typeof p !== 'number' || !isFinite(q) || !isFinite(p)) return;
+        if (typeof q !== 'number' || typeof p !== 'number' || !isFinite(q) || !isFinite(p) ||
+            q < 0 || q > IW.GRID || p < 0 || p > IW.GRID) return;
         var hg = el('g', { 'class': 'handle', 'data-end': end });
         hg.appendChild(el('circle', { cx: x(q), cy: y(p), r: 11, 'class': 'handle__hit', 'data-end': end }));
         hg.appendChild(el('circle', { cx: x(q), cy: y(p), r: 6.5, 'class': 'handle__dot', 'data-end': end }));

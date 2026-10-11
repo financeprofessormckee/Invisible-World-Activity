@@ -62,3 +62,18 @@ Checking before a second observation; a curve kind already found; an incomplete 
 ## Deferred variants (from the source)
 
 Nonlinear curves; small random error, turning inference statistical; an observable but uncontrollable condition that affects one curve only; a larger commodity library; unlimited, scrollable observations. Per Friedman, harder levels should start with more points so scores stay comparable.
+
+## Proposed corrective revision
+
+Grading now requires observations at two distinct quantities. Repeated equilibria
+remain allowed and still cost five points, but cannot supply identification
+evidence; checking with only repeated evidence has no penalty. A candidate supply
+line must rise and a candidate demand line must fall. The existing ±3 tolerance
+then applies. Incomplete, vertical, and out-of-axis endpoints are refused without
+a penalty. Numeric entry is never silently clamped. These checks close the
+`AUDIT235` duplicate-point loophole documented in `REVIEW.md`.
+
+Endpoint units are visible; the table is a keyboard-focusable scroll region;
+replay preserves row-button focus; touch users can scroll on the plot and drag
+handles; world links open in a new tab to preserve the current run. No claim of a
+completed accessibility audit is made.

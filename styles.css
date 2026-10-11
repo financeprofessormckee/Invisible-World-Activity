@@ -72,7 +72,7 @@ select:disabled, input:disabled { background: #eee; }
 .score { margin: 0 0 0.5rem; font-size: 1.05rem; }
 .score strong { font-size: 1.4rem; color: var(--accent); }
 
-#graph { width: 100%; height: auto; display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+#graph { width: 100%; height: auto; display: block; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 #graph .plot-bg { fill: #fff; cursor: crosshair; }
 #graph .gridline { stroke: #e3dfe1; stroke-width: 1; }
 #graph .axis { stroke: var(--ink); stroke-width: 1.5; }
@@ -87,7 +87,7 @@ select:disabled, input:disabled { background: #eee; }
 #graph .curve--demand { stroke: var(--demand); stroke-dasharray: 9 4; }
 #graph .curve--student { stroke-width: 2; stroke-dasharray: 2 4; opacity: 0.9; }
 #graph .draft { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 3; pointer-events: none; }
-#graph .handle { cursor: grab; }
+#graph .handle { cursor: grab; touch-action: none; }
 #graph .handle__hit { fill: transparent; }
 #graph .handle__dot { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
 #graph .handle__num { font-size: 8.5px; fill: #fff; font-weight: 700; pointer-events: none; }
@@ -110,6 +110,7 @@ select:disabled, input:disabled { background: #eee; }
 .condition__ends { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
 
 .note { min-height: 1.5em; margin: 0.5rem 0 0; font-size: 0.95rem; }
+input[aria-invalid="true"] { border: 2px solid var(--bad); }
 #curve-feedback { font-weight: 600; }
 
 #curve-form fieldset { border: 1px solid var(--rule); border-radius: 6px; padding: 0.5rem 0.75rem 0.75rem; margin: 0 0 0.75rem; min-width: 0; }

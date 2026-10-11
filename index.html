@@ -47,7 +47,7 @@
         <label for="commodity">Market</label>
         <select id="commodity"></select>
         <span class="setup__code">World code <strong id="scenario-code"></strong></span>
-        <a id="share-link" href="#">Link to this world</a>
+        <a id="share-link" href="#" target="_blank" rel="noopener">Link to this world (new tab)</a>
         <button type="button" id="new-world" class="btn btn--quiet">New world</button>
       </div>
     </section>
@@ -78,7 +78,7 @@
           <desc id="graph-desc"></desc>
         </svg>
         <ul class="legend" id="legend"></ul>
-        <p class="muted small" id="graph-help">Click two spots on the graph to place a line's endpoints; clicks near a point snap onto it. You can also drag an endpoint.</p>
+        <p class="muted small" id="graph-help">Click or tap two spots to place endpoints; nearby observations snap into place. Drag an endpoint to adjust it, or use the form below. Swipe the plot to scroll on a touch screen.</p>
       </section>
 
       <div class="panel-stack">
@@ -116,6 +116,7 @@
                 <button type="button" id="thru-apply" class="btn btn--quiet">Draw</button>
               </div>
               <p class="muted small">or set the endpoints:</p>
+              <p class="muted small" id="endpoint-units"></p>
               <div class="endpoints">
                 <div class="endpoint">
                   <span class="endpoint__name">Endpoint 1</span>
@@ -144,8 +145,9 @@
 
     <section class="panel" aria-labelledby="log-heading">
       <h2 id="log-heading">Observation list</h2>
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" aria-labelledby="log-heading" tabindex="0">
         <table id="log">
+          <caption class="visually-hidden">Recorded market conditions and equilibrium price and quantity</caption>
           <thead><tr id="log-head"></tr></thead>
           <tbody></tbody>
         </table>
