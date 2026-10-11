@@ -22,12 +22,29 @@
   </header>
 
   <main id="main" tabindex="-1">
-    <p class="eyebrow">Friedman Economic Games · Proposal 5</p>
-    <h1>The Invisible World</h1>
-    <p class="intro">In the real world you never see a supply curve or a demand curve, only the price and quantity where they cross. Change the conditions, watch where the market lands, and work out both hidden curves.</p>
+    <noscript><p>This activity needs JavaScript to generate and record market observations.</p></noscript>
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Friedman Economic Games · Proposal 5</p>
+        <h1>The Invisible World</h1>
+        <p class="intro">You can see the market. Can you uncover the forces behind it?</p>
+        <p class="hero-copy">Each point is a price and quantity where two hidden curves cross. Design controlled experiments to identify supply and demand.</p>
+      </div>
+      <aside class="mission" aria-label="Your investigation">
+        <span class="eyebrow">Your investigation</span>
+        <strong>Two curves. Twelve observations.</strong>
+        <p>Start with A. Change a condition, collect evidence, and make your case.</p>
+        <p id="progress-copy" class="progress-copy">0 of 2 curves identified</p>
+      </aside>
+    </div>
+    <ol class="phase-steps" aria-label="Investigation stages">
+      <li id="stage-observe" aria-current="step"><span>01</span><div><strong>Observe</strong><small>Change conditions deliberately</small></div></li>
+      <li id="stage-identify"><span>02</span><div><strong>Identify</strong><small>Test a line against the evidence</small></div></li>
+      <li id="stage-explain"><span>03</span><div><strong>Explain</strong><small>Reveal, compare, and reflect</small></div></li>
+    </ol>
 
-    <details class="howto" open>
-      <summary>How to play</summary>
+    <details class="howto">
+      <summary>How to play &amp; scoring</summary>
       <ol>
         <li>Point <strong>A</strong> shows the market price and quantity under the starting conditions. The curves that produced it are invisible.</li>
         <li>Change any of the three conditions and choose <strong>Observe</strong> to see where the market lands next. Each observation after A costs 5 points; you may take up to 12.</li>
@@ -35,6 +52,7 @@
         <li>A wrong curve costs 10 points. Find both curves to keep your full score; finding only one halves it.</li>
         <li>When you finish, the replay reveals the true curves behind every point.</li>
       </ol>
+      <p class="small">This model assumes straight, parallel-shifting curves. One condition shifts supply only, another shifts demand only, and the third may affect either, both, or neither. Its role changes between worlds.</p>
       <details class="hint">
         <summary>Hint</summary>
         <p>Every observed point sits on both curves at once. If you change something that moves only supply, demand stays put, so the new point and the old one lie on the same demand curve. Which condition can you trust to move only one curve? Is the third one safe to assume? Moving a slider several steps at once makes a bigger, easier-to-read jump.</p>
@@ -47,16 +65,43 @@
         <label for="commodity">Market</label>
         <select id="commodity"></select>
         <span class="setup__code">World code <strong id="scenario-code"></strong></span>
-        <a id="share-link" href="#">Link to this world</a>
+        <a id="share-link" href="#" target="_blank" rel="noopener">Link to this world (new tab)</a>
         <button type="button" id="new-world" class="btn btn--quiet">New world</button>
       </div>
     </section>
 
+    <div class="play">
+      <section class="panel panel--graph" aria-labelledby="graph-heading">
+        <h2 id="graph-heading">Market observations</h2>
+        <p class="score" aria-live="off">Score: <strong id="score">100</strong> <span id="score-note" class="muted"></span></p>
+        <div id="market-readout" class="market-readout" aria-label="Latest observed equilibrium"></div>
+        <svg id="graph" viewBox="0 0 364 352" role="img" aria-labelledby="graph-title graph-desc">
+          <title id="graph-title">Price against quantity</title>
+          <desc id="graph-desc"></desc>
+        </svg>
+        <ul class="legend" id="legend"></ul>
+        <p class="muted small" id="graph-help">Click or tap two spots to place endpoints; nearby observations snap into place. Drag an endpoint to adjust it, or use the form below. Swipe the plot to scroll on a touch screen.</p>
+        <section class="comparison" aria-labelledby="comparison-heading">
+          <h3 id="comparison-heading">Compare the evidence</h3>
+          <div class="compare-controls">
+            <label>First point <select id="compare-first"></select></label>
+            <span aria-hidden="true">→</span>
+            <label>Second point <select id="compare-second"></select></label>
+            <button type="button" id="compare-draw" class="btn btn--small">Draw this pair</button>
+          </div>
+          <p id="comparison-summary" class="small" role="status"></p>
+          <dl id="comparison-deltas" class="delta-grid"></dl>
+          <ul id="comparison-changes" class="small"></ul>
+          <p id="comparison-explanation" class="comparison-explanation" hidden></p>
+        </section>
+      </section>
+
+      <div class="panel-stack">
     <section class="panel" id="results" aria-labelledby="results-heading" hidden>
       <h2 id="results-heading" tabindex="-1">Results and replay</h2>
       <p class="final" id="final-score"></p>
       <p id="breakdown"></p>
-      <p id="role-reveal"></p>
+      <p id="role-reveal" class="role-reveal"></p>
       <div class="replay">
         <h3 id="replay-heading">Replay</h3>
         <div class="replay__nav">
@@ -66,33 +111,45 @@
         <p id="replay-text"></p>
         <p id="replay-groups"></p>
       </div>
+      <p id="prediction-review" class="muted small"></p>
+      <div class="reflection">
+        <label for="reflection"><strong>Make the connection</strong></label>
+        <p id="reflection-prompt" class="small">Which pair isolates a curve, what stayed fixed, and why? What does the third condition teach you about assuming a variable is a safe shifter?</p>
+        <textarea id="reflection" rows="4" maxlength="2000" aria-describedby="reflection-prompt reflection-note" placeholder="Use observation labels to support your explanation."></textarea>
+        <p id="reflection-note" class="muted small">Included in the CSV download. Reloading starts over; download your record to keep it.</p>
+      </div>
       <button type="button" id="play-again" class="btn btn--primary">Play a new world</button>
     </section>
 
-    <div class="play">
-      <section class="panel panel--graph" aria-labelledby="graph-heading">
-        <h2 id="graph-heading">Market observations</h2>
-        <p class="score" aria-live="off">Score: <strong id="score">100</strong> <span id="score-note" class="muted"></span></p>
-        <svg id="graph" viewBox="0 0 364 352" role="img" aria-labelledby="graph-title graph-desc">
-          <title id="graph-title">Price against quantity</title>
-          <desc id="graph-desc"></desc>
-        </svg>
-        <ul class="legend" id="legend"></ul>
-        <p class="muted small" id="graph-help">Click two spots on the graph to place a line's endpoints; clicks near a point snap onto it. You can also drag an endpoint.</p>
-      </section>
 
-      <div class="panel-stack">
         <section class="panel" id="observe-panel" aria-labelledby="observe-heading">
+          <p class="eyebrow">01 · Experiment</p>
           <h2 id="observe-heading">Change conditions</h2>
+          <div class="baseline-tools">
+            <label for="baseline">Compare with observation</label>
+            <div class="actions"><select id="baseline"></select><button type="button" id="restore-baseline" class="btn btn--small">Restore its conditions</button></div>
+            <p id="baseline-diff" class="small"></p>
+          </div>
           <fieldset id="conditions" class="conditions">
             <legend class="visually-hidden">Market conditions</legend>
             <div id="condition-list"></div>
           </fieldset>
+          <details class="prediction">
+            <summary>Make a prediction <span class="muted">(optional, unscored)</span></summary>
+            <p class="small">Compared with your selected baseline, what will happen?</p>
+            <div class="prediction-fields">
+              <label>Price <select id="predict-price"><option value="">No prediction</option><option value="up">Rise</option><option value="down">Fall</option><option value="same">Stay the same</option></select></label>
+              <label>Quantity <select id="predict-quantity"><option value="">No prediction</option><option value="up">Rise</option><option value="down">Fall</option><option value="same">Stay the same</option></select></label>
+            </div>
+            <label for="experiment-reason">Why? <span class="muted">(optional)</span></label>
+            <textarea id="experiment-reason" rows="2" maxlength="500"></textarea>
+          </details>
           <button type="button" id="observe" class="btn btn--primary">Observe point B</button>
           <p id="observe-note" class="note"></p>
         </section>
 
         <section class="panel" id="curve-panel" aria-labelledby="curve-heading">
+          <p class="eyebrow">02 · Inference</p>
           <h2 id="curve-heading">Identify a curve</h2>
           <form id="curve-form" novalidate>
             <fieldset class="kind">
@@ -116,6 +173,7 @@
                 <button type="button" id="thru-apply" class="btn btn--quiet">Draw</button>
               </div>
               <p class="muted small">or set the endpoints:</p>
+              <p class="muted small" id="endpoint-units"></p>
               <div class="endpoints">
                 <div class="endpoint">
                   <span class="endpoint__name">Endpoint 1</span>
@@ -143,9 +201,14 @@
 
 
     <section class="panel" aria-labelledby="log-heading">
-      <h2 id="log-heading">Observation list</h2>
-      <div class="table-wrap">
+      <div class="notebook-heading">
+        <div><p class="eyebrow">Your field notes</p><h2 id="log-heading">Observation notebook</h2></div>
+        <button type="button" id="export-csv" class="btn btn--quiet">Download CSV</button>
+      </div>
+      <p class="muted small">Recorded points stay fixed when you move the sliders. “Use” sets the conditions for grading your line; “Restore” above sets up your next experiment.</p>
+      <div class="table-wrap" role="region" aria-labelledby="log-heading" tabindex="0">
         <table id="log">
+          <caption class="visually-hidden">Recorded market conditions and equilibrium price and quantity</caption>
           <thead><tr id="log-head"></tr></thead>
           <tbody></tbody>
         </table>
@@ -162,6 +225,7 @@
 
   <script src="js/model.js"></script>
   <script src="js/graph.js"></script>
+  <script src="js/lab.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

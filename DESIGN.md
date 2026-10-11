@@ -37,4 +37,4 @@ Write fresh browser code by default; follow source-use notes (in the authoring c
 
 ## Next task
 
-See [SPECIFICATION.md](SPECIFICATION.md) and [HANDOFF.md](HANDOFF.md).
+See [SPECIFICATION.md](SPECIFICATION.md).

@@ -40,3 +40,38 @@ of derivative works. If you use or adapt this activity, please cite this reposit
 ---
 *Economic concepts: [David Friedman](http://daviddfriedman.com/Living_Paper/living_paper.htm). Development: [Eric McKee](https://github.com/financeprofessormckee),
 Paul and Virginia Engler College of Business, West Texas A&M University.*
+
+### Review and regression checks
+
+[REVIEW.md](REVIEW.md) records the findings behind this proposal. The model suite
+includes the duplicate-equilibrium grading regression. An optional integration
+suite exercises the actual page in Chromium:
+
+```sh
+npm install --no-save playwright@1.62.1
+npx playwright install chromium
+node tests/browser-tests.cjs
+```
+
+Set `CHROMIUM_EXECUTABLE_PATH` if using an existing Chromium installation.
+The application itself still requires no dependencies or build step.
+
+### Investigation workbench (broader proposal)
+
+This alternative includes the corrective revision plus a more structured lab:
+restore any observation's conditions without spending points; compare any pair;
+record an optional price/quantity prediction and reasoning; then use the revealed
+curves to explain the evidence. Predictions are unscored. The downloadable CSV
+contains observed data, units, predictions, and the final reflection. It does not
+export hidden model coefficients or the third condition's role. Nothing is saved
+automatically; download the record before reloading.
+
+Additional checks:
+
+```sh
+node tests/lab-tests.cjs
+node tests/workbench-tests.cjs
+```
+
+The workbench browser suite uses the same optional Playwright installation as the
+base browser suite. Both proposals target the same original `main`; choose one.

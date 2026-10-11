@@ -89,7 +89,7 @@ for (const c of IW.COMMODITIES) {
 // 5. Tolerance edge: a line parallel to the true curve, offset by 2.9 and 3.1 price units.
 {
   const w = IW.createWorld('wool', 'EDGE01');
-  const s = [2, 2, 2], A = obs(w, s, 0), list = [A];
+  const s = [2, 2, 2], A = obs(w, s, 0), list = [A, obs(w, [3, 2, 2], 1)];
   const curve = IW.trueCurve(w, 'demand', s);
   const at = (off) => ({ q1: 10, p1: curve.priceAt(10) + off, q2: 190, p2: curve.priceAt(190) + off });
   ok(IW.gradeCurve(w, at(2.9), 'demand', s, list).correct, 'offset 2.9 accepted');
@@ -130,6 +130,24 @@ for (const c of IW.COMMODITIES) {
 }
 ok(IW.formatAxis(IW.getCommodity('wool').price, 105) === '$2.10', 'wool price format');
 ok(IW.formatAxis(IW.getCommodity('homes').quantity, 123.4) === '1,234 homes', 'homes quantity format');
+
+// 9. A repeated equilibrium cannot identify two curves within a narrow tolerance window.
+{
+  const w = IW.createWorld('wool', 'AUDIT235');
+  const A = obs(w, w.initial, 0), B = obs(w, w.initial, 1);
+  const flat = { q1: 0, p1: A.P, q2: 200, p2: A.P };
+  for (const kind of ['supply', 'demand']) {
+    ok(IW.gradeCurve(w, flat, kind, A.settings, [A, B]).error === 'evidence', 'duplicate equilibria give no identification evidence');
+    const shifted = w.initial.slice(); shifted[0]++;
+    const C = obs(w, shifted, 2);
+    ok(!IW.gradeCurve(w, flat, kind, A.settings, [A, C]).correct, 'flat line cannot pass as ' + kind);
+    ok(IW.gradeCurve(w, { ...flat, p1: -1 }, kind, A.settings, [A, C]).error === 'bounds', 'out-of-range endpoints refused');
+  }
+  // Direction is enforced even when a narrow window puts a wrong-signed line within tolerance.
+  const almost = { ...A, Q: A.Q + 0.01, label: 'C' };
+  const backwards = { q1: 0, p1: A.P + 0.2, q2: 200, p2: A.P - 0.2 };
+  ok(!IW.gradeCurve(w, backwards, 'supply', A.settings, [A, almost]).correct, 'downward line cannot be supply');
+}
 
 console.log(`${checks} checks, ${failures} failures`);
 process.exit(failures ? 1 : 0);

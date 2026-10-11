@@ -3,6 +3,7 @@
   'use strict';
   var IW = window.InvisibleWorld;
   var Graph = window.InvisibleWorldGraph;
+  var Lab = window.InvisibleWorldLab;
   var CFG = IW.CONFIG;
 
   function $(id) { return document.getElementById(id); }
@@ -36,8 +37,14 @@
       draft: blankLine(),
       placeNext: 1,
       phase: 'play',
-      replayIndex: 0
+      replayIndex: 0,
+      baselineIndex: 0,
+      compare: [0, 0]
     };
+    document.body.classList.remove('is-complete');
+    ['predict-price', 'predict-quantity', 'experiment-reason', 'reflection'].forEach(function (id) { $(id).value = ''; });
+    drag = null; press = null;
+    ['attach', 'thru-1', 'thru-2'].forEach(function (id) { $(id).value = ''; });
     addObservation();
     try { window.history.replaceState(null, '', worldUrl(world)); } catch (e) { /* file:// may refuse; the link still works */ }
     buildConditionControls();
@@ -48,6 +55,8 @@
     document.querySelectorAll('.q-label').forEach(function (n) { n.textContent = 'Quantity'; });
     document.querySelectorAll('.p-label').forEach(function (n) { n.textContent = 'Price'; });
     configureEndpointInputs();
+    $('endpoint-units').textContent = 'Quantity: ' + unitWord(world.commodity.quantity) +
+      '. Price: ' + unitWord(world.commodity.price) + '. Enter values within the graph’s axes.';
     $('results').hidden = true;
     $('curve-feedback').textContent = '';
     setKind(firstOpenKind());
@@ -106,7 +115,7 @@
     head.textContent = '';
     var c = state.world.commodity;
     var cols = ['Point'].concat(c.variables.map(function (v) { return v.name; }),
-      ['Price (' + unitWord(c.price) + ')', 'Quantity (' + unitWord(c.quantity) + ')', '']);
+      ['Price (' + unitWord(c.price) + ')', 'Quantity (' + unitWord(c.quantity) + ')', 'Experiment', '']);
     cols.forEach(function (t, i) {
       var th = document.createElement('th');
       th.scope = 'col';
@@ -131,6 +140,7 @@
         input.max = IW.toDisplay(pair[1], IW.GRID);
         input.step = step;
         input.setAttribute('aria-description', pair[0] === 'q' ? c.quantity.title : c.price.title);
+        input.setAttribute('aria-describedby', 'endpoint-units curve-feedback');
       });
     });
   }
@@ -146,6 +156,11 @@
   function observe() {
     if (state.phase !== 'play' || state.observations.length >= CFG.maxObservations) return;
     var o = addObservation();
+    o.baseline = state.baselineIndex;
+    o.prediction = { price: $('predict-price').value, quantity: $('predict-quantity').value,
+      reason: $('experiment-reason').value.trim() };
+    state.compare = [state.baselineIndex, state.observations.length - 1];
+    ['predict-price', 'predict-quantity', 'experiment-reason'].forEach(function (id) { $(id).value = ''; });
     announce('Observation ' + o.label + ': price ' + fmtP(o.P) + ', quantity ' + fmtQ(o.Q) +
       '. Score ' + IW.runningScore(scoreState()) + '.');
     render();
@@ -175,9 +190,13 @@
     var target = state.observations[Number($('attach').value)];
     var result = IW.gradeCurve(state.world, state.draft, kind, target.settings, state.observations);
     if (!result.valid) {
-      fb.textContent = result.error === 'vertical'
-        ? 'The two endpoints need different quantities; a vertical line cannot be checked.'
-        : 'Give the line first: pick two observations, type both endpoints, or click two spots on the graph.';
+      var errors = {
+        vertical: 'The two endpoints need different quantities; a vertical line cannot be checked.',
+        bounds: 'Keep each endpoint within the graph’s quantity and price ranges. No points deducted.',
+        evidence: 'Observe at least two different quantities before checking. Repeated points do not identify a curve. No points deducted.',
+        incomplete: 'Give the line first: pick two observations, type both endpoints, or click two spots on the graph.'
+      };
+      fb.textContent = errors[result.error];
       announce(fb.textContent);
       return;
     }
@@ -200,7 +219,9 @@
 
   function finish() {
     state.phase = 'done';
+    document.body.classList.add('is-complete');
     state.replayIndex = 0;
+    state.compare = [0, 0];
     state.draft = blankLine();
     render();
     $('results').hidden = false;
@@ -237,7 +258,7 @@
 
   var drag = null, press = null;
   function onPointerDown(evt) {
-    if (state.phase !== 'play') return;
+    if (state.phase !== 'play' || evt.button !== 0 || evt.isPrimary === false) return;
     var end = evt.target.getAttribute && evt.target.getAttribute('data-end');
     press = { x: evt.clientX, y: evt.clientY, moved: false };
     if (end) {
@@ -279,8 +300,8 @@
     var axis = axisKey === 'q' ? state.world.commodity.quantity : state.world.commodity.price;
     var raw = evt.target.value;
     var v = raw === '' ? NaN : IW.fromDisplay(axis, Number(raw));
-    if (isFinite(v)) v = Math.min(IW.GRID, Math.max(0, v));
     state.draft[axisKey + end] = v;
+    evt.target.setAttribute('aria-invalid', String(raw !== '' && (!isFinite(v) || v < 0 || v > IW.GRID)));
     renderGraph();
   }
 
@@ -317,6 +338,7 @@
     renderObservePanel();
     renderCurvePanel();
     renderLog();
+    renderLab();
     renderGraph();
     if (state.phase === 'done') renderResults();
   }
@@ -330,6 +352,7 @@
   }
 
   function renderObservePanel() {
+    renderBaselineInfo();
     var n = state.observations.length;
     var done = state.phase !== 'play';
     $('conditions').disabled = done;
@@ -379,6 +402,8 @@
       var qi = $('q' + end), pi = $('p' + end);
       if (document.activeElement !== qi) qi.value = isFinite(q) ? IW.toDisplay(c.quantity, q) : '';
       if (document.activeElement !== pi) pi.value = isFinite(p) ? IW.toDisplay(c.price, p) : '';
+      qi.setAttribute('aria-invalid', String(isFinite(q) && (q < 0 || q > IW.GRID)));
+      pi.setAttribute('aria-invalid', String(isFinite(p) && (p < 0 || p > IW.GRID)));
     });
     var parts = [];
     ['supply', 'demand'].forEach(function (k) {
@@ -389,6 +414,7 @@
 
   function renderLog() {
     var body = document.querySelector('#log tbody');
+    var focusId = body.contains(document.activeElement) ? document.activeElement.id : null;
     body.textContent = '';
     var c = state.world.commodity;
     state.observations.forEach(function (o, i) {
@@ -400,13 +426,25 @@
       o.settings.forEach(function (lvl, v) { td(tr, c.variables[v].levels[lvl]); });
       td(tr, fmtP(o.P), 'num');
       td(tr, fmtQ(o.Q), 'num');
+      var note = document.createElement('td');
+      note.className = 'experiment-note';
+      if (o.prediction) {
+        var base = state.observations[o.baseline];
+        note.textContent = 'Compared with ' + base.label + '. ' + (o.prediction.reason || 'No reasoning recorded.');
+        var predicted = document.createElement('small');
+        predicted.textContent = 'Prediction — price: ' + predictionWord(o.prediction.price) +
+          '; quantity: ' + predictionWord(o.prediction.quantity) + '.';
+        note.appendChild(predicted);
+      } else note.textContent = 'Starting observation';
+      tr.appendChild(note);
       var cell = document.createElement('td');
       var b = document.createElement('button');
       b.type = 'button';
+      b.id = 'log-action-' + i;
       b.className = 'btn btn--small';
       if (state.phase === 'done') {
         b.textContent = 'Replay ' + o.label;
-        b.addEventListener('click', function () { state.replayIndex = i; render(); announceReplay(); });
+        b.addEventListener('click', function () { replayAt(i); });
       } else {
         b.textContent = 'Use ' + o.label;
         b.setAttribute('aria-label', 'Use observation ' + o.label + '’s conditions for the curve');
@@ -419,6 +457,7 @@
       tr.appendChild(cell);
       body.appendChild(tr);
     });
+    if (focusId && $(focusId)) $(focusId).focus({ preventScroll: true });
   }
 
   function td(tr, text, cls) {
@@ -440,6 +479,7 @@
       commodity: w.commodity,
       observations: state.observations,
       highlight: highlight,
+      selection: done ? null : state.compare,
       draft: done ? null : state.draft,
       found: state.found,
       revealed: revealed
@@ -498,8 +538,15 @@
     $('breakdown').textContent = 'Started at ' + CFG.startScore +
       ', −' + sc.observationPenalty + ' for ' + extra + ' extra observation' + (extra === 1 ? '' : 's') +
       ', −' + sc.wrongPenalty + ' for ' + state.wrong + ' wrong tr' + (state.wrong === 1 ? 'y' : 'ies') +
-      ' = ' + sc.running + '. ' + found;
+      '; running score ' + sc.running + ' (minimum 0). ' + found;
     $('role-reveal').textContent = IW.ambiguousExplanation(state.world);
+    var predictions = state.observations.reduce(function (all, point) {
+      return all.concat(Lab.predictionResult(state.observations, point));
+    }, []);
+    $('prediction-review').textContent = predictions.length
+      ? predictions.filter(function (p) { return p.correct; }).length + ' of ' + predictions.length +
+        ' predicted directions matched the observations. Predictions do not affect your score.'
+      : 'No directional predictions recorded. On your next run, predict before you observe.';
     var i = state.replayIndex, obs = state.observations, o = obs[i];
     $('replay-heading').textContent = 'Replay: observation ' + o.label + ' (' + (i + 1) + ' of ' + obs.length + ')';
     $('prev').disabled = i === 0;
@@ -517,8 +564,124 @@
     announce($('replay-heading').textContent + '. ' + $('replay-text').textContent);
   }
 
+  /* ---------- Experiment workbench ---------- */
+  function predictionWord(value) {
+    return { up: 'rise', down: 'fall', same: 'stay the same' }[value] || 'not specified';
+  }
+
+  function renderBaselineInfo() {
+    var base = state.observations[state.baselineIndex];
+    if (!base) return;
+    var changed = Lab.changes(state.world.commodity, base.settings, state.settings);
+    $('baseline-diff').textContent = changed.length === 0
+      ? 'No changes from ' + base.label + '. Observing will repeat that point.'
+      : changed.length + ' condition' + (changed.length === 1 ? '' : 's') + ' changed from ' + base.label + ': ' +
+        changed.map(function (v) { return v.name; }).join(', ') + '.' +
+        (changed.length > 1 ? ' Multiple changes can make cause and effect harder to separate.' : '');
+  }
+
+  function renderLab() {
+    ['baseline', 'compare-first', 'compare-second'].forEach(function (id) { optionsFor($(id), false); });
+    $('baseline').value = String(state.baselineIndex);
+    $('compare-first').value = String(state.compare[0]);
+    $('compare-second').value = String(state.compare[1]);
+    $('baseline').disabled = state.phase === 'done';
+    $('restore-baseline').disabled = state.phase === 'done';
+    var count = (state.found.supply ? 1 : 0) + (state.found.demand ? 1 : 0);
+    $('progress-copy').textContent = count + ' of 2 curves identified' +
+      (state.phase === 'done' ? ' · investigation complete' : ' · ' + (CFG.maxObservations - state.observations.length) + ' observations left');
+    var stage = state.phase === 'done' ? 'explain' : state.observations.length > 1 ? 'identify' : 'observe';
+    ['observe', 'identify', 'explain'].forEach(function (name) {
+      if (name === stage) $('stage-' + name).setAttribute('aria-current', 'step');
+      else $('stage-' + name).removeAttribute('aria-current');
+    });
+    var latest = state.observations[state.phase === 'done' ? state.replayIndex : state.observations.length - 1];
+    var readout = $('market-readout');
+    readout.textContent = '';
+    [['Price at ' + latest.label, fmtP(latest.P)], ['Quantity at ' + latest.label, fmtQ(latest.Q)]].forEach(function (item) {
+      var group = document.createElement('div'), label = document.createElement('small'), value = document.createElement('strong');
+      label.textContent = item[0]; value.textContent = item[1];
+      group.appendChild(label); group.appendChild(value); readout.appendChild(group);
+    });
+    renderComparison();
+  }
+
+  function renderComparison() {
+    var a = state.observations[state.compare[0]], b = state.observations[state.compare[1]];
+    var changed = Lab.changes(state.world.commodity, a.settings, b.settings);
+    var distinct = state.compare[0] !== state.compare[1];
+    $('comparison-summary').textContent = distinct
+      ? a.label + ' → ' + b.label + ': ' + changed.length + ' condition' + (changed.length === 1 ? '' : 's') + ' changed.'
+      : 'Choose two observations to compare what changed and what stayed fixed.';
+    var list = $('comparison-changes'); list.textContent = '';
+    changed.forEach(function (v) {
+      var li = document.createElement('li'); li.textContent = v.name + ': ' + v.from + ' → ' + v.to; list.appendChild(li);
+    });
+    var deltas = $('comparison-deltas'); deltas.textContent = '';
+    if (distinct) {
+      [['Price', b.P - a.P, fmtP], ['Quantity', b.Q - a.Q, fmtQ]].forEach(function (item) {
+        var group = document.createElement('div'), term = document.createElement('dt'), value = document.createElement('dd');
+        term.textContent = item[0] + ' change';
+        value.textContent = (Math.abs(item[1]) < 1e-9 ? '' : item[1] > 0 ? '+' : '−') + item[2](Math.abs(item[1]));
+        group.appendChild(term); group.appendChild(value); deltas.appendChild(group);
+      });
+    }
+    var explain = $('comparison-explanation');
+    explain.hidden = state.phase !== 'done' || !distinct;
+    explain.textContent = !explain.hidden ? IW.describeStep(state.world, a, b).text : '';
+    $('compare-draw').disabled = state.phase === 'done' || !distinct || Math.abs(a.Q - b.Q) < 1e-9;
+  }
+
+  function replayAt(index) {
+    state.replayIndex = index;
+    state.compare = [Math.max(0, index - 1), index];
+    render(); announceReplay();
+  }
+
+  function exportRecord() {
+    var record = { commodity: state.world.commodity, code: state.world.code,
+      observations: state.observations, phase: state.phase,
+      found: ['supply', 'demand'].filter(function (kind) { return !!state.found[kind]; }),
+      score: IW.finalScore(scoreState()).final, reflection: $('reflection').value };
+    var blob = new Blob([Lab.csvRecord(record)], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob), link = document.createElement('a');
+    link.href = url; link.download = 'invisible-world-' + state.world.commodity.id + '-' + state.world.code + '.csv';
+    document.body.appendChild(link); link.click(); link.remove();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    announce('Observation notebook downloaded as CSV.');
+  }
+
+  function wireLab() {
+    $('baseline').addEventListener('change', function () {
+      state.baselineIndex = Number(this.value); renderBaselineInfo();
+    });
+    $('restore-baseline').addEventListener('click', function () {
+      if (state.phase !== 'play') return;
+      var base = state.observations[state.baselineIndex];
+      state.settings = base.settings.slice();
+      state.settings.forEach(function (value, i) { $('var-' + i).value = value; updateConditionText(i); });
+      renderObservePanel();
+      announce('Restored ' + base.label + '’s conditions. No observation taken; no points spent.');
+    });
+    ['compare-first', 'compare-second'].forEach(function (id, i) {
+      $(id).addEventListener('change', function () {
+        state.compare[i] = Number(this.value);
+        if (state.phase === 'done') state.replayIndex = state.compare[1];
+        renderComparison(); renderGraph();
+        if (state.phase === 'done') { renderLog(); renderResults(); renderLab(); }
+      });
+    });
+    $('compare-draw').addEventListener('click', function () {
+      if (state.phase !== 'play') return;
+      $('thru-1').value = String(state.compare[0]); $('thru-2').value = String(state.compare[1]);
+      drawThrough(); $('attach').focus();
+    });
+    $('export-csv').addEventListener('click', exportRecord);
+  }
+
   /* ---------- Wiring ---------- */
   function init() {
+    wireLab();
     var sel = $('commodity');
     IW.COMMODITIES.forEach(function (c) { sel.appendChild(new Option(c.name, c.id)); });
     sel.addEventListener('change', function () {
@@ -560,8 +723,8 @@
       $(id).addEventListener('input', onEndpointInput);
       $(id).addEventListener('change', render);
     });
-    $('prev').addEventListener('click', function () { if (state.replayIndex > 0) { state.replayIndex--; render(); announceReplay(); } });
-    $('next').addEventListener('click', function () { if (state.replayIndex < state.observations.length - 1) { state.replayIndex++; render(); announceReplay(); } });
+    $('prev').addEventListener('click', function () { if (state.replayIndex > 0) replayAt(state.replayIndex - 1); });
+    $('next').addEventListener('click', function () { if (state.replayIndex < state.observations.length - 1) replayAt(state.replayIndex + 1); });
     svg.addEventListener('pointerdown', onPointerDown);
     svg.addEventListener('pointermove', onPointerMove);
     svg.addEventListener('pointerup', onPointerUp);

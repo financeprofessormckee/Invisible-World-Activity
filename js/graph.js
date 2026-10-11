@@ -70,7 +70,10 @@
     }
     g.appendChild(el('line', { x1: LEFT, y1: TOP + SIZE, x2: LEFT + SIZE, y2: TOP + SIZE, 'class': 'axis' }));
     g.appendChild(el('line', { x1: LEFT, y1: TOP, x2: LEFT, y2: TOP + SIZE, 'class': 'axis' }));
-    g.appendChild(el('text', { x: LEFT + SIZE / 2, y: TOP + SIZE + 38, 'class': 'axis-title', 'text-anchor': 'middle' }, c.quantity.title));
+    var quantityParts = c.quantity.title.split(' (');
+    g.appendChild(el('text', { x: LEFT + SIZE / 2, y: TOP + SIZE + 33, 'class': 'axis-title', 'text-anchor': 'middle' }, quantityParts[0]));
+    if (quantityParts[1]) g.appendChild(el('text', { x: LEFT + SIZE / 2, y: TOP + SIZE + 47,
+      'class': 'axis-title axis-title--unit', 'text-anchor': 'middle' }, '(' + quantityParts[1]));
     g.appendChild(el('text', { x: 14, y: TOP + SIZE / 2, 'class': 'axis-title', 'text-anchor': 'middle',
       transform: 'rotate(-90 14 ' + (TOP + SIZE / 2) + ')' }, c.price.title));
 
@@ -87,8 +90,9 @@
     if (d && !IW.lineCheck(d)) drawLine(g, lineFn(d), 'draft');
 
     clusters(view.observations).forEach(function (cl) {
-      var hot = view.highlight != null && cl.idx.indexOf(view.highlight) !== -1;
-      var dim = view.highlight != null && !hot;
+      var hot = view.highlight != null ? cl.idx.indexOf(view.highlight) !== -1 :
+        !!view.selection && cl.idx.some(function (i) { return view.selection.indexOf(i) !== -1; });
+      var dim = (view.highlight != null || !!view.selection) && !hot;
       g.appendChild(el('circle', { cx: x(cl.Q), cy: y(cl.P), r: hot ? 6 : 4.5, 'class': 'obs' + (hot ? ' obs--hot' : '') + (dim ? ' obs--dim' : '') }));
       g.appendChild(el('text', { x: x(cl.Q) + 7, y: y(cl.P) - 7, 'class': 'obs-label' + (dim ? ' obs--dim' : '') }, cl.labels.join(', ')));
     });
@@ -96,7 +100,8 @@
     if (d) {
       [1, 2].forEach(function (end) {
         var q = d['q' + end], p = d['p' + end];
-        if (typeof q !== 'number' || typeof p !== 'number' || !isFinite(q) || !isFinite(p)) return;
+        if (typeof q !== 'number' || typeof p !== 'number' || !isFinite(q) || !isFinite(p) ||
+            q < 0 || q > IW.GRID || p < 0 || p > IW.GRID) return;
         var hg = el('g', { 'class': 'handle', 'data-end': end });
         hg.appendChild(el('circle', { cx: x(q), cy: y(p), r: 11, 'class': 'handle__hit', 'data-end': end }));
         hg.appendChild(el('circle', { cx: x(q), cy: y(p), r: 6.5, 'class': 'handle__dot', 'data-end': end }));

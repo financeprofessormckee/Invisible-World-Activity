@@ -62,3 +62,57 @@ Checking before a second observation; a curve kind already found; an incomplete 
 ## Deferred variants (from the source)
 
 Nonlinear curves; small random error, turning inference statistical; an observable but uncontrollable condition that affects one curve only; a larger commodity library; unlimited, scrollable observations. Per Friedman, harder levels should start with more points so scores stay comparable.
+
+## Proposed corrective revision
+
+Grading now requires observations at two distinct quantities. Repeated equilibria
+remain allowed and still cost five points, but cannot supply identification
+evidence; checking with only repeated evidence has no penalty. A candidate supply
+line must rise and a candidate demand line must fall. The existing ±3 tolerance
+then applies. Incomplete, vertical, and out-of-axis endpoints are refused without
+a penalty. Numeric entry is never silently clamped. These checks close the
+`AUDIT235` duplicate-point loophole documented in `REVIEW.md`.
+
+Endpoint units are visible; the table is a keyboard-focusable scroll region;
+replay preserves row-button focus; touch users can scroll on the plot and drag
+handles; world links open in a new tab to preserve the current run. No claim of a
+completed accessibility audit is made.
+
+## Proposed workbench revision (alternative to the conservative proposal)
+
+The original learning objective, three markets, seeded worlds, linear model,
+hidden third-variable role, curve-entry methods, scoring and observation cap are
+preserved. The corrective grading rules above also apply.
+
+- **Experiment baseline:** choose any recorded observation, restore its conditions
+  without adding an observation, and see which controls differ from it. “Use” in
+  the table continues to set only the grading attachment.
+- **Predictions:** optional, unscored price and quantity directions plus a short
+  rationale are captured with each observation and its baseline. They reset after
+  observing. Directions are checked against the selected baseline after finishing,
+  with no effect on the game score.
+- **Pair comparison:** compare arbitrary observations, with condition changes and
+  price/quantity differences. Differences use the unrounded model observations
+  and are then formatted in market units; displayed endpoint rounding can therefore
+  differ slightly from the displayed delta. The comparison does not disclose
+  hidden curve movements during play. “Draw this pair” fills the existing line form
+  without choosing the curve kind or grading attachment for the student.
+- **Debrief:** after finishing, selecting the second comparison point reveals that
+  observation's true curves and explains the selected pair, including nonconsecutive
+  experiments. The sequential replay text remains explicitly labeled as sequential.
+  The reflection asks for an explanation using observation labels.
+- **Record:** CSV includes world code, commodity, conditions, observed price and
+  quantity with units, prediction/baseline, reasoning, known found curves, phase,
+  final score only after completion, and reflection. It contains no hidden
+  coefficients or role. Text is CSV-escaped and spreadsheet formula prefixes are
+  neutralized. Download is manual; no persistence, accounts, network service,
+  analytics, or dependencies are added to the application.
+- **Presentation:** retain the existing college masthead and maroon identity. An
+  observe–identify–explain indicator, equilibrium readout, responsive comparison
+  panel, and two-line quantity-axis label make the investigation easier to follow.
+  Results replace the experiment controls beside the graph on wide screens.
+
+Node tests cover notebook operations and export escaping. Browser tests cover
+baseline restoration, predictions, pairwise inference, hidden-answer boundaries,
+replay, CSV download, reflection, reset and mobile reflow, in addition to the
+conservative regression suite. Screen-reader and physical-touch audits remain open.
